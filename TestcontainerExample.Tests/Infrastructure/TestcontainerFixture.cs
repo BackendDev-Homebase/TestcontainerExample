@@ -1,19 +1,26 @@
-﻿using DotNet.Testcontainers.Builders;
+﻿// Prerequisites: Installation and start of Docker Desktop (Azure Build Server apparently works without it)
+
+// - Context must have a ctor with DbContextOptions<>
+
+// - add NuGet "Testcontainers.MsSql"
+//   Testcontainers for .NET is a library to support tests with throwaway instances of Docker containers for all compatible .NET Standard versions.
+
+using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.MsSql;
 
-namespace TestcontainerExample.Tests;
+namespace TestcontainerExample.Tests.Infrastructure;
 
-public class IntegrationTestBase : IAsyncLifetime
+public class TestcontainerFixture : IAsyncLifetime
 {
     private readonly MsSqlContainer _database;
-    public Context? Context { get; private set; }
+    public static Context? Context { get; private set; }
 
-    public IntegrationTestBase()
+    public TestcontainerFixture()
     {
-        // is executed once per each use as ITestFixture
+        // is executed once before all tests run
         _database = new MsSqlBuilder()
             .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
             .WithWaitStrategy(Wait
@@ -25,7 +32,7 @@ public class IntegrationTestBase : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // is executed once before all tests run
+        // is executed once before all tests run - after the ctor
         await _database.StartAsync();
         var options = new DbContextOptionsBuilder<Context>()
                     .UseSqlServer(_database.GetConnectionString(), optionsBuilder =>
